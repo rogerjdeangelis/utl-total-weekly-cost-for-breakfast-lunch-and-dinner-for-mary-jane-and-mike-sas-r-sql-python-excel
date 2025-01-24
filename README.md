@@ -204,28 +204,61 @@ Total weekly cost for breakfast lunch and dinner for mary jane and mike sas r sq
                                       |_|
     */
 
-    %utl_rbeginx;
-    parmcards4;
-    library(haven)
-    library(dplyr)
-    source("c:/oto/fn_tosas9x.R")
-    df2<-read_sas("d:/sd1/df2.sas7bdat")
-    df1<-read_sas("d:/sd1/df1.sas7bdat")
-    df1
-    df2
-    result_df <-  df2 %>%  group_by(NAME) %>%
-      summarize(mean_breakfast = mean(BREAK)
-               ,mean_lunch     = mean(LUNCH)
-               ,mean_dinner    = mean(DINNER)) %>%
-      inner_join(df1, by = c("NAME"))
-    result_df
-    fn_tosas9x(
-          inp    = result_df
-         ,outlib ="d:/sd1/"
-         ,outdsn ="want"
-         )
-    ;;;;
-    %utl_rendx;
+     parmcards4;                             
+     library(openxlsx)                       
+     library(sqldf)                          
+     library(haven)                          
+     df1<-read_sas("d:/sd1/df1.sas7bdat")    
+     df2<-read_sas("d:/sd1/df2.sas7bdat")    
+     wb <- createWorkbook()                  
+     addWorksheet(wb, "df1")                 
+     addWorksheet(wb, "df2")                 
+     writeData(wb, sheet = "df1", x = df1)   
+     writeData(wb, sheet = "df2", x = df2)   
+     saveWorkbook(                           
+         wb                                  
+        ,"d:/xls/wantxl.xlsx"                
+        ,overwrite=TRUE)                     
+     ;;;;                                    
+     %utl_rendx;                             
+                                             
+     %utl_rbeginx;                           
+     parmcards4;                             
+     library(openxlsx)                       
+     library(sqldf)                          
+     source("c:/oto/fn_tosas9x.R")           
+      wb<-loadWorkbook("d:/xls/wantxl.xlsx") 
+      df1<-read.xlsx(wb,"df1")               
+      df2<-read.xlsx(wb,"df2")               
+      addWorksheet(wb, "want")               
+      want<-sqldf('                          
+       select                                
+         l.name                              
+        ,avg(break)  as avgbreak             
+        ,avg(lunch)  as avglunch             
+        ,avg(dinner) as avgdinner            
+       from                                  
+         df1 as l inner join df2 as r        
+       on                                    
+         l.name=r.name                       
+       group                                 
+         by l.name                           
+       ')                                    
+      print(want)                            
+      writeData(wb,sheet="want",x=want)      
+      saveWorkbook(                          
+          wb                                 
+         ,"d:/xls/wantxl.xlsx"               
+         ,overwrite=TRUE)                    
+     fn_tosas9x(                             
+           inp    = want                     
+          ,outlib ="d:/sd1/"                 
+          ,outdsn ="want"                    
+          )                                  
+     ;;;;                                    
+     %utl_rendx;                             
+                                             
+
 
     /**************************************************************************************************************************/
     /*                                                                                                                        */
